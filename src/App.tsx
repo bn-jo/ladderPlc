@@ -279,6 +279,16 @@ export default function App() {
     setSelectedRungId(r.id);
     setSelectedElementId(null);
   }
+  // Wipe the whole build back to a single blank rung.
+  function clearAll() {
+    if (!window.confirm("Clear the entire build and start a blank ladder?")) return;
+    const p = starterProgram();
+    setProgram(p);
+    setSelectedRungId(p.rungs[0]?.id ?? null);
+    setSelectedElementId(null);
+    setPlacingTool(null);
+    setReport(null);
+  }
   function deleteRung() {
     if (!selectedRung) return;
     setProgram((p) => ({ rungs: p.rungs.filter((r) => r.id !== selectedRung.id) }));
@@ -502,6 +512,9 @@ export default function App() {
               </button>
               <button onClick={clearRung} disabled={!selectedRung}>
                 Clear rung
+              </button>
+              <button className="danger" onClick={clearAll}>
+                Clear all
               </button>
               <span className="muted">
                 {selectedRung
