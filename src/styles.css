@@ -56,6 +56,20 @@ body {
   overflow: hidden;
 }
 
+/* Narrower screens: stack the three panels and let the page scroll. */
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .sidebar,
+  .runtime {
+    border-left: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
 /* ---------------------------------------------------------- sidebar */
 .sidebar {
   border-right: 1px solid var(--border);
@@ -164,13 +178,43 @@ body {
   padding: 10px;
   overflow-x: auto;
 }
+.canvas-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 4px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.check-label input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
 .ladder {
   display: block;
+  width: 100%;
+  height: auto;
+  max-width: 780px;
+  margin: 0 auto;
 }
 .ladder .addr {
   fill: var(--muted);
   font-size: 11px;
   font-family: "SF Mono", ui-monospace, monospace;
+}
+.ladder .tag-name {
+  fill: #cbd5e1;
+  font-size: 10px;
+  font-family: "Inter", system-ui, sans-serif;
 }
 .ladder .coil-letter {
   font-size: 13px;

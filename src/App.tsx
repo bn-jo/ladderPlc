@@ -96,6 +96,7 @@ export default function App() {
   // Editor: which element is selected, and whether a palette drag is active.
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
 
   const simRef = useRef<Simulator>(new Simulator(program));
 
@@ -358,9 +359,20 @@ export default function App() {
           </section>
 
           <section className="canvas-wrap">
+            <div className="canvas-toolbar">
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={showLabels}
+                  onChange={(e) => setShowLabels(e.target.checked)}
+                />
+                Show tag names
+              </label>
+            </div>
             <LadderCanvas
               program={program}
               values={values}
+              labels={showLabels ? Object.fromEntries(ex.io.map((t) => [t.address, t.label])) : {}}
               selectedRungId={selectedRungId}
               onSelectRung={(id) => {
                 setSelectedRungId(id);

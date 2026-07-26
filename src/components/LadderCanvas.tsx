@@ -14,6 +14,7 @@ export type AddrGroups = { group: string; items: string[] }[];
 interface Props {
   program: Program;
   values: Record<string, boolean>;
+  labels: Record<string, string>; // address -> friendly tag name
   selectedRungId: string | null;
   onSelectRung: (id: string) => void;
   selectedElementId: string | null;
@@ -36,9 +37,9 @@ type Anchor = { el: LadderElement; cx: number; cy: number };
 
 const RAIL_LEFT = 34;
 const COL_W = 116;
-const BRANCH_GAP = 40;
-const RUNG_TOP_PAD = 30;
-const RUNG_BOTTOM_PAD = 24;
+const BRANCH_GAP = 50;
+const RUNG_TOP_PAD = 38;
+const RUNG_BOTTOM_PAD = 26;
 const OUTPUT_W = 120;
 const ON = "#22c55e";
 const OFF = "#64748b";
@@ -56,12 +57,34 @@ function branchCount(groups: LadderElement[][]): number {
   return groups.reduce((m, g) => Math.max(m, g.length), 1);
 }
 
+function TagText({ address, name, cx, cy }: { address: string; name?: string; cx: number; cy: number }) {
+  // Address on top; friendly tag name below it (e.g. "I0.0" / "Fwd").
+  if (name) {
+    return (
+      <>
+        <text x={cx} y={cy - 31} textAnchor="middle" className="addr">
+          {address}
+        </text>
+        <text x={cx} y={cy - 20} textAnchor="middle" className="tag-name">
+          {name}
+        </text>
+      </>
+    );
+  }
+  return (
+    <text x={cx} y={cy - 20} textAnchor="middle" className="addr">
+      {address}
+    </text>
+  );
+}
+
 function Contact({
   el,
   cx,
   cy,
   live,
   selected,
+  name,
   onClick,
 }: {
   el: LadderElement;
@@ -69,6 +92,7 @@ function Contact({
   cy: number;
   live: boolean;
   selected: boolean;
+  name?: string;
   onClick: (e: React.MouseEvent) => void;
 }) {
   const color = live ? ON : OFF;
@@ -76,11 +100,9 @@ function Contact({
   return (
     <g onClick={onClick} style={{ cursor: "pointer" }}>
       {selected && (
-        <rect x={cx - 40} y={cy - 26} width={80} height={52} rx={7} fill="rgba(56,189,248,0.12)" stroke={SEL} strokeWidth={1.5} />
+        <rect x={cx - 40} y={cy - 36} width={80} height={62} rx={7} fill="rgba(56,189,248,0.12)" stroke={SEL} strokeWidth={1.5} />
       )}
-      <text x={cx} y={cy - 18} textAnchor="middle" className="addr">
-        {el.address}
-      </text>
+      <TagText address={el.address} name={name} cx={cx} cy={cy} />
       <line x1={cx - 34} y1={cy} x2={cx - half} y2={cy} stroke={color} strokeWidth={2} />
       <line x1={cx + half} y1={cy} x2={cx + 34} y2={cy} stroke={color} strokeWidth={2} />
       <line x1={cx - half} y1={cy - 12} x2={cx - half} y2={cy + 12} stroke={color} strokeWidth={2.5} />
@@ -98,6 +120,7 @@ function Output({
   cy,
   live,
   selected,
+  name,
   onClick,
 }: {
   el: LadderElement;
@@ -105,6 +128,7 @@ function Output({
   cy: number;
   live: boolean;
   selected: boolean;
+  name?: string;
   onClick: (e: React.MouseEvent) => void;
 }) {
   const color = live ? ON : OFF;
@@ -114,11 +138,9 @@ function Output({
     return (
       <g onClick={onClick} style={{ cursor: "pointer" }}>
         {selected && (
-          <rect x={cx - 40} y={cy - 26} width={80} height={52} rx={7} fill="rgba(56,189,248,0.12)" stroke={SEL} strokeWidth={1.5} />
+          <rect x={cx - 40} y={cy - 36} width={80} height={62} rx={7} fill="rgba(56,189,248,0.12)" stroke={SEL} strokeWidth={1.5} />
         )}
-        <text x={cx} y={cy - 18} textAnchor="middle" className="addr">
-          {el.address}
-        </text>
+        <TagText address={el.address} name={name} cx={cx} cy={cy} />
         <line x1={cx - 40} y1={cy} x2={cx - 12} y2={cy} stroke={color} strokeWidth={2} />
         <line x1={cx + 12} y1={cy} x2={cx + 40} y2={cy} stroke={color} strokeWidth={2} />
         <path d={`M ${cx - 12} ${cy - 12} A 16 16 0 0 0 ${cx - 12} ${cy + 12}`} fill="none" stroke={color} strokeWidth={2.5} />
@@ -259,6 +281,7 @@ function Popover({
 function Rung({
   rung,
   values,
+  labels,
   baseY,
   width,
   selected,
@@ -270,6 +293,7 @@ function Rung({
 }: {
   rung: Program["rungs"][number];
   values: Record<string, boolean>;
+  labels: Record<string, string>;
   baseY: number;
   width: number;
   selected: boolean;
@@ -314,6 +338,7 @@ function Rung({
           cy={cy}
           live={conducts(el, values)}
           selected={el.id === selectedElementId}
+          name={labels[el.address]}
           onClick={(e) => {
             e.stopPropagation();
             onPickElement(rung.id, el.id);
@@ -340,6 +365,7 @@ function Rung({
         cy={baseY}
         live={live}
         selected={rung.output.id === selectedElementId}
+        name={labels[rung.output.address]}
         onClick={(e) => {
           e.stopPropagation();
           onPickElement(rung.id, rung.output!.id);
@@ -412,6 +438,7 @@ export default function LadderCanvas(props: Props) {
   const {
     program,
     values,
+    labels,
     selectedRungId,
     onSelectRung,
     selectedElementId,
@@ -426,7 +453,7 @@ export default function LadderCanvas(props: Props) {
     onDeleteElement,
   } = props;
   const width = 780;
-  let y = 0;
+  let y = 8; // top margin so the first rung's address line isn't clipped
   const rungEls: JSX.Element[] = [];
   let popAnchor: Anchor | null = null;
 
@@ -455,6 +482,7 @@ export default function LadderCanvas(props: Props) {
         key={rung.id}
         rung={rung}
         values={values}
+        labels={labels}
         baseY={baseY}
         width={width}
         selected={rung.id === selectedRungId}
