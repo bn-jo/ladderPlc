@@ -478,6 +478,16 @@ export default function App() {
               <div className="canvas-wrap solution">
                 <div className="canvas-toolbar">
                   <span className="col-title solution-title">Reference solution</span>
+                  <div className="toolbar-actions">
+                    {report && (
+                      <span className={`recheck-status ${report.passed ? "pass" : "fail"}`}>
+                        {report.passed ? "✓ Passing" : "✗ Not passing"}
+                      </span>
+                    )}
+                    <button className="check-mini" onClick={checkSolution}>
+                      ✓ Re-check
+                    </button>
+                  </div>
                 </div>
                 <LadderCanvas
                   program={ex.solution}
