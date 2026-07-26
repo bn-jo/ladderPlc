@@ -96,6 +96,8 @@ export default function App() {
   // Editor: which element is selected, and whether a palette drag is active.
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // Tap-to-place tool (works on touch devices where HTML5 drag doesn't fire).
+  const [placingTool, setPlacingTool] = useState<ElementType | null>(null);
   const [showLabels, setShowLabels] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
 
@@ -115,6 +117,7 @@ export default function App() {
     setShowHints(false);
     setSelectedElementId(null);
     setDragging(false);
+    setPlacingTool(null);
     setShowSolution(false);
     solSimRef.current = new Simulator(structuredClone(ex.solution));
     solSimRef.current.scan(0);
@@ -252,6 +255,11 @@ export default function App() {
     // Just place it — the inline editor opens only when the element is tapped.
     setSelectedRungId(rungId);
     setSelectedElementId(null);
+  }
+
+  // Touch/click placement: an armed palette tool is dropped by tapping a zone.
+  function onZoneTap(rungId: string, target: DropTarget) {
+    if (placingTool) handleDrop(rungId, target, placingTool);
   }
 
   function clearRung() {
@@ -408,6 +416,8 @@ export default function App() {
                 setSelectedElementId(elId);
               }}
               dragging={dragging}
+              placing={placingTool !== null}
+              onZoneTap={onZoneTap}
               onDropElement={handleDrop}
               contactGroups={contactAddresses(ex)}
               outputGroups={outputAddresses(ex)}
@@ -432,6 +442,8 @@ export default function App() {
                   selectedElementId={null}
                   onPickElement={() => {}}
                   dragging={false}
+                  placing={false}
+                  onZoneTap={() => {}}
                   onDropElement={() => {}}
                   contactGroups={[]}
                   outputGroups={[]}
@@ -468,7 +480,7 @@ export default function App() {
                 {PALETTE.map((p) => (
                   <div
                     key={p.type}
-                    className="chip"
+                    className={`chip ${placingTool === p.type ? "active" : ""}`}
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.setData("text/plain", p.type);
@@ -476,7 +488,10 @@ export default function App() {
                       setDragging(true);
                     }}
                     onDragEnd={() => setDragging(false)}
-                    title={`Drag "${p.label}" onto the ladder`}
+                    onClick={() =>
+                      setPlacingTool((t) => (t === p.type ? null : p.type))
+                    }
+                    title={`Tap to arm, then tap a zone — or drag "${p.label}" (desktop)`}
                   >
                     <span className="chip-glyph">{p.glyph}</span>
                     {p.label}
@@ -485,8 +500,18 @@ export default function App() {
               </div>
             </div>
             <div className="drag-hint muted">
-              Drag a contact onto <b>+ series</b> (AND) or an <b>OR</b> zone of a
-              group; drop a coil/timer/counter on the <b>output</b> zone.
+              {placingTool ? (
+                <span className="placing-hint">
+                  Placing <b>{PALETTE.find((p) => p.type === placingTool)?.label}</b> — tap a
+                  highlighted zone on the ladder. Tap the tool again to cancel.
+                </span>
+              ) : (
+                <>
+                  <b>Tap</b> a tool then tap a <b>+ series</b> (AND) / <b>OR</b> zone for
+                  contacts, or the <b>output</b> zone for a coil/timer/counter. On desktop you
+                  can also <b>drag</b> a tool onto a zone.
+                </>
+              )}
             </div>
 
             {/* per-element editor */}

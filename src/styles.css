@@ -350,6 +350,14 @@ button:disabled {
 .chip:active {
   cursor: grabbing;
 }
+.chip.active {
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.22);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.placing-hint {
+  color: var(--accent);
+}
 .chip-glyph {
   font-family: ui-monospace, "SF Mono", monospace;
   color: var(--accent);

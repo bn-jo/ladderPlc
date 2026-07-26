@@ -21,6 +21,9 @@ interface Props {
   onPickElement: (rungId: string, elementId: string) => void;
   dragging: boolean;
   onDropElement: (rungId: string, target: DropTarget, type: ElementType) => void;
+  // Tap-to-place (touch-friendly): show zones and place on tap.
+  placing: boolean;
+  onZoneTap: (rungId: string, target: DropTarget) => void;
   // Inline element editing (popover on the ladder).
   contactGroups: AddrGroups;
   outputGroups: AddrGroups;
@@ -182,6 +185,7 @@ function DropZone({
   h,
   label,
   onDrop,
+  onClick,
 }: {
   x: number;
   y: number;
@@ -189,9 +193,16 @@ function DropZone({
   h: number;
   label: string;
   onDrop: (e: React.DragEvent) => void;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   return (
-    <g className="dropzone" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
+    <g
+      className="dropzone"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      onClick={onClick}
+      style={{ cursor: "pointer" }}
+    >
       <rect x={x} y={y} width={w} height={h} rx={6} />
       <text x={x + w / 2} y={y + h / 2 + 4} textAnchor="middle" className="dz-label">
         {label}
@@ -289,6 +300,8 @@ function Rung({
   onSelectRung,
   onPickElement,
   dragging,
+  placing,
+  onZoneTap,
   onDropElement,
 }: {
   rung: Program["rungs"][number];
@@ -301,6 +314,8 @@ function Rung({
   onSelectRung: (id: string) => void;
   onPickElement: (rungId: string, elementId: string) => void;
   dragging: boolean;
+  placing: boolean;
+  onZoneTap: (rungId: string, target: DropTarget) => void;
   onDropElement: (rungId: string, target: DropTarget, type: ElementType) => void;
 }) {
   const wires: JSX.Element[] = [];
@@ -385,9 +400,13 @@ function Rung({
     const type = e.dataTransfer.getData("text/plain") as ElementType;
     if (type) onDropElement(rung.id, target, type);
   };
+  const handleTap = (target: DropTarget) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onZoneTap(rung.id, target);
+  };
 
   const zones: JSX.Element[] = [];
-  if (dragging) {
+  if (dragging || placing) {
     groups.forEach((group, gi) => {
       const x = RAIL_LEFT + gi * COL_W + 3;
       const h = Math.max(1, group.length) * BRANCH_GAP + 8;
@@ -400,16 +419,35 @@ function Rung({
           h={h}
           label="OR"
           onDrop={handleDrop({ kind: "parallel", groupIndex: gi })}
+          onClick={handleTap({ kind: "parallel", groupIndex: gi })}
         />,
       );
     });
     const seriesX = cursorX + 4;
     const seriesW = Math.max(70, outX - 70 - seriesX);
     zones.push(
-      <DropZone key="sz" x={seriesX} y={baseY - 18} w={seriesW} h={36} label="+ series" onDrop={handleDrop({ kind: "series-append" })} />,
+      <DropZone
+        key="sz"
+        x={seriesX}
+        y={baseY - 18}
+        w={seriesW}
+        h={36}
+        label="+ series"
+        onDrop={handleDrop({ kind: "series-append" })}
+        onClick={handleTap({ kind: "series-append" })}
+      />,
     );
     zones.push(
-      <DropZone key="oz" x={outX - 50} y={baseY - 18} w={100} h={36} label="output" onDrop={handleDrop({ kind: "output" })} />,
+      <DropZone
+        key="oz"
+        x={outX - 50}
+        y={baseY - 18}
+        w={100}
+        h={36}
+        label="output"
+        onDrop={handleDrop({ kind: "output" })}
+        onClick={handleTap({ kind: "output" })}
+      />,
     );
   }
 
@@ -444,6 +482,8 @@ export default function LadderCanvas(props: Props) {
     selectedElementId,
     onPickElement,
     dragging,
+    placing,
+    onZoneTap,
     onDropElement,
     contactGroups,
     outputGroups,
@@ -490,6 +530,8 @@ export default function LadderCanvas(props: Props) {
         onSelectRung={onSelectRung}
         onPickElement={onPickElement}
         dragging={dragging}
+        placing={placing}
+        onZoneTap={onZoneTap}
         onDropElement={onDropElement}
       />,
     );
