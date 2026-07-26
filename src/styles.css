@@ -48,6 +48,11 @@ body {
   color: var(--muted);
   font-size: 13px;
 }
+.nav-toggle {
+  font-size: 13px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
 
 .layout {
   flex: 1;
@@ -55,10 +60,15 @@ body {
   grid-template-columns: 240px 1fr 300px;
   overflow: hidden;
 }
+.layout.no-sidebar {
+  grid-template-columns: 1fr 300px;
+}
 
-/* Narrower screens: stack the three panels and let the page scroll. */
+/* Narrower screens: stack the panels, let the page scroll, and show the
+   ladder at a readable size (scroll it horizontally instead of shrinking). */
 @media (max-width: 1024px) {
-  .layout {
+  .layout,
+  .layout.no-sidebar {
     grid-template-columns: 1fr;
     overflow-y: auto;
   }
@@ -67,6 +77,17 @@ body {
     border-left: none;
     border-right: none;
     border-bottom: 1px solid var(--border);
+  }
+  .ladder {
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+  .canvas-area {
+    flex-direction: column;
+  }
+  .tagline {
+    display: none;
   }
 }
 

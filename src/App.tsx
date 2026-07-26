@@ -100,6 +100,7 @@ export default function App() {
   const [placingTool, setPlacingTool] = useState<ElementType | null>(null);
   const [showLabels, setShowLabels] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
+  const [showCurriculum, setShowCurriculum] = useState(true);
 
   const simRef = useRef<Simulator>(new Simulator(program));
   // A separate simulator runs the reference solution so it can animate
@@ -342,14 +343,22 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
+        <button
+          className="nav-toggle"
+          onClick={() => setShowCurriculum((s) => !s)}
+          title={showCurriculum ? "Hide curriculum" : "Show curriculum"}
+        >
+          ☰ {showCurriculum ? "Hide" : "Lessons"}
+        </button>
         <div className="brand">
           <span className="logo">⎓</span> Ladder PLC Academy
         </div>
         <div className="tagline">Learn PLC ladder logic — build, simulate, get graded</div>
       </header>
 
-      <div className="layout">
+      <div className={`layout ${showCurriculum ? "" : "no-sidebar"}`}>
         {/* -------------------------------------------------- curriculum */}
+        {showCurriculum && (
         <aside className="sidebar">
           <h2>Curriculum</h2>
           {tiers.map(([tier, list]) => (
@@ -370,6 +379,7 @@ export default function App() {
             </div>
           ))}
         </aside>
+        )}
 
         {/* -------------------------------------------------- workspace */}
         <main className="workspace">
