@@ -518,10 +518,44 @@ button.check {
   flex: 1;
 }
 
+.io-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mode-switch {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.mode-switch button {
+  border: none;
+  border-radius: 0;
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.mode-switch button.on {
+  background: rgba(56, 189, 248, 0.18);
+  color: var(--accent);
+}
+.mode-switch button:hover:not(.on) {
+  color: var(--text);
+}
+
 .io-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.io-btn.momentary {
+  touch-action: none;
+  user-select: none;
+}
+.io-btn.momentary:active {
+  border-color: var(--accent);
 }
 .io-btn,
 .io-lamp {

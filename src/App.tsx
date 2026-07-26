@@ -101,6 +101,8 @@ export default function App() {
   const [showLabels, setShowLabels] = useState(true);
   const [showSolution, setShowSolution] = useState(false);
   const [showCurriculum, setShowCurriculum] = useState(true);
+  // "toggle" = maintained switch (click on/off); "momentary" = push button (on while held).
+  const [inputMode, setInputMode] = useState<"toggle" | "momentary">("toggle");
 
   const simRef = useRef<Simulator>(new Simulator(program));
   // A separate simulator runs the reference solution so it can animate
@@ -284,20 +286,44 @@ export default function App() {
     setSelectedElementId(null);
   }
 
-  function toggleInput(addr: string) {
+  // Apply an explicit input value to both simulators, settling once if paused.
+  function setInputValue(addr: string, value: boolean) {
     setInputValues((prev) => {
-      const next = { ...prev, [addr]: !prev[addr] };
+      if (prev[addr] === value) return prev;
       const sim = simRef.current;
       const sol = solSimRef.current;
-      sim.setInput(addr, next[addr]);
-      sol.setInput(addr, next[addr]);
+      sim.setInput(addr, value);
+      sol.setInput(addr, value);
       if (!running) {
         sim.scan(0);
         sol.scan(0);
         setTick((t) => t + 1);
       }
-      return next;
+      return { ...prev, [addr]: value };
     });
+  }
+
+  function toggleInput(addr: string) {
+    setInputValue(addr, !inputValues[addr]);
+  }
+
+  // Switch between maintained (toggle) and momentary (push) inputs; releases all.
+  function changeInputMode(mode: "toggle" | "momentary") {
+    setInputMode(mode);
+    setInputValues({});
+    const sim = simRef.current;
+    const sol = solSimRef.current;
+    ex.io
+      .filter((t) => t.kind === "input")
+      .forEach((t) => {
+        sim.setInput(t.address, false);
+        sol.setInput(t.address, false);
+      });
+    if (!running) {
+      sim.scan(0);
+      sol.scan(0);
+      setTick((t) => t + 1);
+    }
   }
 
   function resetSim() {
@@ -583,20 +609,53 @@ export default function App() {
             <button onClick={resetSim}>Reset</button>
           </div>
 
-          <h3>Inputs</h3>
+          <div className="io-header">
+            <h3>Inputs</h3>
+            <div className="mode-switch">
+              <button
+                className={inputMode === "toggle" ? "on" : ""}
+                onClick={() => changeInputMode("toggle")}
+                title="Maintained switch: click to turn on/off"
+              >
+                Switch
+              </button>
+              <button
+                className={inputMode === "momentary" ? "on" : ""}
+                onClick={() => changeInputMode("momentary")}
+                title="Push button: on while held, off on release"
+              >
+                Push
+              </button>
+            </div>
+          </div>
           <div className="io-list">
             {ex.io
               .filter((t) => t.kind === "input")
-              .map((t) => (
-                <button
-                  key={t.address}
-                  className={`io-btn ${inputValues[t.address] ? "on" : ""}`}
-                  onClick={() => toggleInput(t.address)}
-                >
-                  <span className="io-dot" />
-                  {t.label} <span className="io-addr">{t.address}</span>
-                </button>
-              ))}
+              .map((t) => {
+                const on = inputValues[t.address];
+                const momentary = inputMode === "momentary";
+                return (
+                  <button
+                    key={t.address}
+                    className={`io-btn ${on ? "on" : ""} ${momentary ? "momentary" : ""}`}
+                    onClick={momentary ? undefined : () => toggleInput(t.address)}
+                    onPointerDown={
+                      momentary
+                        ? (e) => {
+                            e.preventDefault();
+                            setInputValue(t.address, true);
+                          }
+                        : undefined
+                    }
+                    onPointerUp={momentary ? () => setInputValue(t.address, false) : undefined}
+                    onPointerLeave={momentary ? () => setInputValue(t.address, false) : undefined}
+                    onPointerCancel={momentary ? () => setInputValue(t.address, false) : undefined}
+                  >
+                    <span className="io-dot" />
+                    {t.label} <span className="io-addr">{t.address}</span>
+                  </button>
+                );
+              })}
           </div>
 
           <h3>Outputs</h3>
