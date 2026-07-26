@@ -170,21 +170,40 @@ body {
   max-width: 720px;
 }
 
-.canvas-wrap {
+.canvas-area {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
   margin: 14px 0;
+}
+.canvas-wrap {
+  flex: 1 1 340px;
+  min-width: 0;
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px;
   overflow-x: auto;
 }
+.canvas-wrap.solution {
+  border-color: rgba(34, 197, 94, 0.35);
+}
 .canvas-toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 0 4px 8px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 8px;
+}
+.col-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.col-title.solution-title {
+  color: #4ade80;
 }
 .check-label {
   display: inline-flex;

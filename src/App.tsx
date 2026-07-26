@@ -97,8 +97,12 @@ export default function App() {
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [showSolution, setShowSolution] = useState(false);
 
   const simRef = useRef<Simulator>(new Simulator(program));
+  // A separate simulator runs the reference solution so it can animate
+  // side-by-side with the learner's build under the same inputs.
+  const solSimRef = useRef<Simulator>(new Simulator(EXERCISES[0].solution));
 
   // Reset everything when switching exercises.
   useEffect(() => {
@@ -111,6 +115,9 @@ export default function App() {
     setShowHints(false);
     setSelectedElementId(null);
     setDragging(false);
+    setShowSolution(false);
+    solSimRef.current = new Simulator(structuredClone(ex.solution));
+    solSimRef.current.scan(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exerciseId]);
 
@@ -129,8 +136,13 @@ export default function App() {
     if (!running) return;
     const id = window.setInterval(() => {
       const sim = simRef.current;
-      Object.entries(inputValues).forEach(([k, v]) => sim.setInput(k, v));
+      const sol = solSimRef.current;
+      Object.entries(inputValues).forEach(([k, v]) => {
+        sim.setInput(k, v);
+        sol.setInput(k, v);
+      });
       sim.scan(100);
+      sol.scan(100);
       setTick((t) => t + 1);
     }, 100);
     return () => window.clearInterval(id);
@@ -267,9 +279,12 @@ export default function App() {
     setInputValues((prev) => {
       const next = { ...prev, [addr]: !prev[addr] };
       const sim = simRef.current;
+      const sol = solSimRef.current;
       sim.setInput(addr, next[addr]);
+      sol.setInput(addr, next[addr]);
       if (!running) {
         sim.scan(0);
+        sol.scan(0);
         setTick((t) => t + 1);
       }
       return next;
@@ -278,6 +293,7 @@ export default function App() {
 
   function resetSim() {
     simRef.current = new Simulator(program);
+    solSimRef.current = new Simulator(structuredClone(ex.solution));
     setInputValues({});
     setRunning(false);
     setTick((t) => t + 1);
@@ -287,12 +303,18 @@ export default function App() {
     setReport(grade(program, ex.tests));
   }
 
-  function revealSolution() {
-    const sol = structuredClone(ex.solution);
-    setProgram(sol);
-    setSelectedRungId(sol.rungs[0]?.id ?? null);
-    setSelectedElementId(null);
-    setReport(null);
+  // Show the reference solution alongside the learner's build (does not replace it).
+  function toggleSolution() {
+    setShowSolution((s) => {
+      const next = !s;
+      if (next) {
+        // Sync the solution sim to the current inputs so both animate together.
+        const sol = solSimRef.current;
+        Object.entries(inputValues).forEach(([k, v]) => sol.setInput(k, v));
+        sol.scan(0);
+      }
+      return next;
+    });
   }
 
   const selectedElement = selectedElementId ? findElement(selectedElementId) : null;
@@ -358,8 +380,10 @@ export default function App() {
             )}
           </section>
 
-          <section className="canvas-wrap">
+          <section className="canvas-area">
+            <div className="canvas-wrap">
             <div className="canvas-toolbar">
+              <span className="col-title">Your build</span>
               <label className="check-label">
                 <input
                   type="checkbox"
@@ -392,6 +416,32 @@ export default function App() {
               onChangePreset={(id, preset) => updateElement(id, { preset })}
               onDeleteElement={deleteElement}
             />
+            </div>
+
+            {showSolution && (
+              <div className="canvas-wrap solution">
+                <div className="canvas-toolbar">
+                  <span className="col-title solution-title">Reference solution</span>
+                </div>
+                <LadderCanvas
+                  program={ex.solution}
+                  values={solSimRef.current.tags}
+                  labels={showLabels ? Object.fromEntries(ex.io.map((t) => [t.address, t.label])) : {}}
+                  selectedRungId={null}
+                  onSelectRung={() => {}}
+                  selectedElementId={null}
+                  onPickElement={() => {}}
+                  dragging={false}
+                  onDropElement={() => {}}
+                  contactGroups={[]}
+                  outputGroups={[]}
+                  onChangeAddress={() => {}}
+                  onToggleContact={() => {}}
+                  onChangePreset={() => {}}
+                  onDeleteElement={() => {}}
+                />
+              </div>
+            )}
           </section>
 
           {/* ---------------------------------------------- editor */}
@@ -531,7 +581,9 @@ export default function App() {
             <button className="check" onClick={checkSolution}>
               ✓ Check solution
             </button>
-            <button onClick={revealSolution}>Reveal</button>
+            <button className={showSolution ? "stop" : ""} onClick={toggleSolution}>
+              {showSolution ? "Hide solution" : "Compare solution"}
+            </button>
           </div>
 
           {report && (
